@@ -486,7 +486,7 @@
                 <div class="share-group">
                     <div class="share-item">
                         <button class="share-btn fb" onclick="share('facebook')" title="Facebook">
-                            <img src="fb.png" alt="FB">
+                            <img src="fa.png" alt="FB">
                         </button>
                         <span class="share-label">Facebook</span>
                     </div>
@@ -694,12 +694,18 @@
                 if (i < val.length) s.classList.add(val[i] === word[i] ? 'correct' : 'wrong');
             });
             
-            // AUTO-ADVANCE
-            if (val === word) {
-                state.wordsCompleted++;
-                state.combo++;
-                playWordComplete();
-                if (state.combo >= 3) showCombo(state.combo);
+            // AUTO-ADVANCE (Even if wrong)
+            if (val.length === word.length) {
+                if (val === word) {
+                    state.wordsCompleted++;
+                    state.combo++;
+                    playWordComplete();
+                    if (state.combo >= 3) showCombo(state.combo);
+                } else {
+                    state.combo = 0;
+                    hideCombo();
+                    // errors already tracked in the char-by-char loop above
+                }
                 state.currentWord++;
                 state.currentLetter = 0;
                 typeInput.value = '';
