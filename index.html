@@ -691,6 +691,19 @@
                 s.classList.remove('correct', 'wrong');
                 if (i < val.length) s.classList.add(val[i] === word[i] ? 'correct' : 'wrong');
             });
+            
+            // AUTO-ADVANCE
+            if (val === word) {
+                state.wordsCompleted++;
+                state.combo++;
+                playWordComplete();
+                if (state.combo >= 3) showCombo(state.combo);
+                state.currentWord++;
+                state.currentLetter = 0;
+                typeInput.value = '';
+                highlightCurrent();
+                updateStats();
+            }
         });
 
         typeInput.addEventListener('keydown', e => {
@@ -888,7 +901,8 @@
         }
 
         function updateBubbles() {
-            if (state.phase !== 'start') { bubbleContainer.style.opacity = '0'; }
+            // Keep bubbles visible but fade slightly when not on start screen
+            if (state.phase !== 'start') { bubbleContainer.style.opacity = '0.3'; }
             else { bubbleContainer.style.opacity = '1'; }
             bubbles.forEach(b => {
                 b.x += b.vx; b.y += b.vy;
