@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>TYPERIFT | Drift into Focus</title>
+    <link href="https://fonts.cdnfonts.com/css/open-runde" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0c14;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-hover: rgba(255, 255, 255, 0.07);
+            --accent: #ff8fb1; /* Soft pink */
+            --accent-glow: rgba(255, 143, 177, 0.4);
+            --secondary: #7ce7ff; /* Soft cyan/blue */
+            --secondary-glow: rgba(124, 231, 255, 0.4);
+            --success: #a0f4d0;
+            --error: #ff7e7e;
+            --text: #e2e8f0;
+            --text-dim: #64748b;
+            --border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Open Runde', sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            overflow: hidden;
+            cursor: none;
+        }
+
+        /* Gradient Background */
+        #bg-mesh {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 143, 177, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(124, 231, 255, 0.05) 0%, transparent 40%);
+            z-index: -1;
+        }
+
+        /* Custom cursor */
+        #cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #cursor-ring {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            border: 1.5px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), width 0.3s, height 0.3s, border-color 0.3s;
+            opacity: 0.5;
+        }
+
+        /* Layout */
+        #app {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        /* Header / Logo */
+        #logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        #logo {
+            font-family: var(--font-main);
+            font-weight: 800;
+            font-size: clamp(3rem, 8vw, 6rem);
+            letter-spacing: 0.1em;
+            color: #f5a623;
+            text-shadow: 0 0 20px rgba(245,166,35,0.5), 0 0 60px rgba(245,166,35,0.2);
+            line-height: 1;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        #logo::after {
+            content: 'TYPERIFT';
+            position: absolute;
+            inset: 0;
+            color: #00e5ff;
+            text-shadow: 0 0 20px rgba(0,229,255,0.5), 0 0 60px rgba(0,229,255,0.2);
+            clip-path: inset(50% 0 0 0);
+            opacity: 0.4;
+            transform: translateY(2px);
+        }
+
+        #tagline {
+            font-family: var(--font-main);
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            letter-spacing: 0.2em;
+            margin-bottom: 30px;
+        }
+
+        /* Stats Card */
+        #stats-bar {
+            display: flex;
+            gap: 2.5rem;
+            background: var(--surface);
+            padding: 1.5rem 2.5rem;
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            margin-bottom: 2.5rem;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        /* Circular Timer */
+        #timer-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        svg.progress-ring {
+            position: absolute;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.1s linear;
+            transform-origin: 50% 50%;
+            stroke: var(--accent);
+            stroke-dasharray: 263.89;
+            stroke-dashoffset: 0;
+        }
+
+        .progress-ring__background {
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 10;
+        }
+
+        #timer-text {
+            font-family: var(--font-main);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent-glow);
+            z-index: 2;
+        }
+
+        .stat-value {
+            font-family: var(--font-main);
+            font-size: 2.5rem;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-family: var(--font-main);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 0.25rem;
+        }
+
+        /* Word Stage */
+        #word-stage {
+            width: 100%;
+            max-width: 850px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            backdrop-filter: blur(12px);
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        #words-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.2rem;
+            font-size: 1.6rem;
+            font-family: var(--font-main);
+            justify-content: center;
+            height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .word { transition: all 0.3s ease; color: var(--text-dim); position: relative; }
+        .word.active { color: var(--text); }
+        .letter { position: relative; }
+        .letter.correct { color: var(--success); }
+        .letter.wrong { color: var(--error); text-decoration: underline; }
+        .letter.current::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 3px;
+            background: var(--accent); border-radius: 2px; box-shadow: 0 0 10px var(--accent-glow);
+            animation: caretBlink 1s infinite;
+        }
+        @keyframes caretBlink { 50% { opacity: 0; } }
+
+        /* Input Area */
+        #input-container {
+            width: 100%;
+            max-width: 850px;
+        }
+        #type-input {
+            width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem;
+            padding: 1.2rem 2rem; font-family: var(--font-main); font-size: 1.2rem;
+            color: var(--text); outline: none; text-align: center; transition: all 0.3s ease;
+        }
+        #type-input:focus { border-color: var(--accent); background: var(--surface-hover); box-shadow: 0 0 20px rgba(255, 143, 177, 0.1); }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent); color: var(--bg); border: none; padding: 1rem 2.5rem;
+            border-radius: 1rem; font-family: var(--font-main); font-size: 1.2rem;
+            cursor: none; transition: all 0.3s ease; box-shadow: 0 10px 25px var(--accent-glow);
+        }
+        .btn:hover { transform: translateY(-3px); filter: brightness(1.1); box-shadow: 0 15px 35px var(--accent-glow); }
+
+        .mode-btn {
+            background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+            padding: 0.8rem 1.5rem; border-radius: 0.8rem; font-family: var(--font-main);
+            font-weight: 600; cursor: none; transition: all 0.2s;
+        }
+        .mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255, 143, 177, 0.05); }
+
+        /* Results Screen */
+        #results-card {
+            background: var(--surface); border: 1px solid var(--border); padding: 4rem;
+            border-radius: 2.5rem; backdrop-filter: blur(20px); text-align: center;
+            width: 100%; max-width: 600px; box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+        }
+        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin: 3rem 0; }
+        .res-val { font-family: var(--font-main); font-size: 3.5rem; color: var(--accent); line-height: 1; font-weight: 800; }
+        .res-lbl { font-family: var(--font-main); font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.5rem; }
+
+        .results-actions {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .share-group {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .share-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .share-btn {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: none;
+            transition: all 0.2s;
+            border: none;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .share-btn:hover { transform: translateY(-5px) scale(1.1); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .share-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+        .share-btn.fb { background: #1877F2; }
+        .share-btn.x { background: #000000; border: 1px solid rgba(255,255,255,0.1); }
+        .share-btn.wa { background: #25D366; }
+        .share-btn.tg { background: #24A1DE; }
+        .share-btn.link { background: var(--secondary); color: var(--bg); }
+
+        .share-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .share-card-btn {
+            background: var(--surface); 
+            border: 1px solid var(--border);
+            color: var(--text); 
+            margin-top: 2rem; 
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 1rem;
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 0.5rem;
+            font-family: var(--font-main);
+            transition: all 0.3s;
+        }
+        .share-card-btn:hover { border-color: var(--secondary); color: var(--secondary); background: rgba(124, 231, 255, 0.05); }
+
+        #toast {
+            position: fixed; bottom: 2rem; background: var(--accent); color: var(--bg);
+            padding: 0.8rem 1.5rem; border-radius: 1rem; font-weight: 600;
+            transform: translateY(100px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 200;
+        }
+        #toast.show { transform: translateY(0); }
+        .screen {
+            position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; background: var(--bg);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.05); }
+
+        /* Premium Glass Bubbles */
+        .bubble {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            box-shadow: 
+                inset 2px 2px 5px rgba(255, 255, 255, 0.2),
+                inset -5px -5px 15px rgba(0, 0, 0, 0.3),
+                0 10px 30px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            z-index: 1;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .bubble::before {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 25%;
+            height: 25%;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .mode-btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cursor"></div>
+    <div id="cursor-ring"></div>
+    <div id="bg-mesh"></div>
+    <div id="bubble-container" style="position: fixed; inset: 0; pointer-events: none; z-index: 1;"></div>
+    <div id="toast">Link copied to clipboard!</div>
+
+    <div id="app">
+        <!-- Start Screen -->
+        <div class="screen" id="start-screen">
+            <div id="logo-container">
+                <div id="logo">TYPERIFT</div>
+                <div id="tagline">Drift into Focus</div>
+            </div>
+            
+            <p style="margin-bottom: 2rem; color: var(--text-dim);">Select your challenge duration</p>
+            
+            <div class="mode-btn-group">
+                <button class="mode-btn active" data-time="20">20s</button>
+                <button class="mode-btn" data-time="30">30s</button>
+                <button class="mode-btn" data-time="60">60s</button>
+            </div>
+            
+            <button class="btn" id="start-btn">IGNITE DRIFT</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="screen hidden" id="game-screen">
+            <div id="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value" id="wpm-val">0</div>
+                    <div class="stat-label">WPM</div>
+                </div>
+                
+                <div id="timer-container">
+                    <svg class="progress-ring" width="100" height="100">
+                        <circle class="progress-ring__background" stroke-width="10" fill="transparent" r="42" cx="50" cy="50"/>
+                        <circle class="progress-ring__circle" stroke-width="10" stroke-linecap="round" fill="transparent" r="42" cx="50" cy="50"/>
+                    </svg>
+                    <div id="timer-text">30</div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-value" id="acc-val">100%</div>
+                    <div class="stat-label">ACC</div>
+                </div>
+            </div>
+
+            <div id="word-stage">
+                <div id="words-container"></div>
+            </div>
+
+            <div id="input-container">
+                <input type="text" id="type-input" placeholder="Start typing to ignite..." autocomplete="off"
+                    autocorrect="off" spellcheck="false" />
+            </div>
+            
+            <div id="combo" style="margin-top: 1.5rem; font-weight: 600; color: var(--accent); opacity: 0; transition: opacity 0.3s;">
+                COMBO <span id="combo-count">0</span>x
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div class="screen hidden" id="results-screen">
+            <div id="results-card">
+                <div style="font-family: var(--font-main); font-weight: 600; letter-spacing: 0.3em; margin-bottom: 1rem; color: var(--text);">DRIFT SUMMARY</div>
+                <h2 style="font-family: var(--font-main); font-size: 2.5rem; margin-bottom: 0.5rem;">AMAZING RUN!</h2>
+                <div id="rank-display" style="font-family: var(--font-main); color: var(--text-dim);">You drifted like a <span id="rank-title" style="color: var(--secondary); font-weight: 700;">Ghost</span></div>
+
+                <div class="res-grid">
+                    <div class="res-item">
+                        <div class="res-val" id="res-wpm">0</div>
+                        <div class="res-lbl">WPM</div>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-val" id="res-acc" style="color: var(--secondary);">0%</div>
+                        <div class="res-lbl">Accuracy</div>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-val" id="res-words" style="color: var(--success);">0</div>
+                        <div class="res-lbl">Words</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="share-card-btn" onclick="generateShareCard()">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        DOWNLOAD SCORE CARD
+                    </button>
+                </div>
+
+                <div class="share-group">
+                    <div class="share-item">
+                        <button class="share-btn fb" onclick="share('facebook')" title="Facebook">
+                            <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </button>
+                        <span class="share-label">Facebook</span>
+                    </div>
+                    <div class="share-item">
+                        <button class="share-btn x" onclick="share('x')" title="X">
+                            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </button>
+                        <span class="share-label">X</span>
+                    </div>
+                    <div class="share-item">
+                        <button class="share-btn wa" onclick="share('whatsapp')" title="WhatsApp">
+                            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .004 5.408.001 12.045c0 2.121.554 4.189 1.602 6.04L0 24l6.103-1.601a11.83 11.83 0 005.94 1.603h.005c6.634 0 12.043-5.408 12.046-12.046.002-3.218-1.248-6.242-3.511-8.508z"/></svg>
+                        </button>
+                        <span class="share-label">WhatsApp</span>
+                    </div>
+                    <div class="share-item">
+                        <button class="share-btn tg" onclick="share('telegram')" title="Telegram">
+                            <svg viewBox="0 0 24 24" stroke="white" stroke-width="0.5"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18.717-.962 4.084-1.362 5.441-.168.57-.505.761-.708.779-.456.041-.791-.305-1.232-.592-.69-.45-1.08-.731-1.751-1.171-.774-.51-.272-.791.168-1.251.115-.121 2.112-1.931 2.151-2.101.005-.021.01-.1-.041-.141-.051-.041-.121-.031-.171-.021-.071.011-1.201.761-3.391 2.241-.321.221-.611.331-.871.321-.291-.011-.851-.171-1.271-.311-.51-.171-.921-.261-.881-.551.021-.151.221-.301.621-.451 2.401-1.041 4.001-1.731 4.801-2.071 2.281-.951 2.751-1.111 3.061-1.111.071 0 .221.011.321.051.081.041.131.111.161.201.03.091.03.201.02.291z"/></svg>
+                        </button>
+                        <span class="share-label">Telegram</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-actions">
+                <button class="btn" id="retry-btn">TRY AGAIN</button>
+                <button class="mode-btn" id="menu-btn" style="padding: 1rem 2rem;">MENU</button>
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ STATE ============
+        let state = {
+            phase: 'start',
+            duration: 30,
+            timeLeft: 30,
+            timer: null,
+            words: [],
+            currentWord: 0,
+            currentLetter: 0,
+            errors: 0,
+            totalKeystrokes: 0,
+            correctKeystrokes: 0,
+            wordsCompleted: 0,
+            combo: 0,
+            started: false,
+            mx: 0, my: 0
+        };
+
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const wordsContainer = document.getElementById('words-container');
+        const typeInput = document.getElementById('type-input');
+        const timerText = document.getElementById('timer-text');
+        const progressCircle = document.querySelector('.progress-ring__circle');
+        const circumference = 2 * Math.PI * 42;
+        const wpmVal = document.getElementById('wpm-val');
+        const accVal = document.getElementById('acc-val');
+        const comboEl = document.getElementById('combo');
+        const comboCount = document.getElementById('combo-count');
+        const toast = document.getElementById('toast');
+        const cursor = document.getElementById('cursor');
+        const cursorRing = document.getElementById('cursor-ring');
+
+        // ============ AUDIO ============
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let actx = null;
+        function getCtx() { if (!actx) actx = new AudioCtx(); return actx; }
+
+        function playCorrect(pos) {
+            const ctx = getCtx(); const t = ctx.currentTime;
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(520 + (pos % 12) * 15, t);
+            gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(t + 0.1);
+        }
+
+        function playError() {
+            const ctx = getCtx(); const t = ctx.currentTime;
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(110, t);
+            gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(t + 0.1);
+        }
+
+        function playWordComplete() {
+            const ctx = getCtx(); const t = ctx.currentTime;
+            [523, 659, 784].forEach((f, i) => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(f, t + i * 0.05);
+                gain.gain.setValueAtTime(0.08, t + i * 0.05); gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.05 + 0.3);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(t + i * 0.05); osc.stop(t + i * 0.05 + 0.3);
+            });
+        }
+
+        function playStart() {
+            const ctx = getCtx(); const t = ctx.currentTime;
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(100, t);
+            osc.frequency.exponentialRampToValueAtTime(880, t + 0.5);
+            gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.2, t + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(t + 0.6);
+        }
+
+        function playEnd() {
+            const ctx = getCtx(); const t = ctx.currentTime;
+            [440, 330, 220].forEach((f, i) => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.frequency.setValueAtTime(f, t + i * 0.1);
+                gain.gain.setValueAtTime(0.1, t + i * 0.1); gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + 0.5);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(t + i * 0.1); osc.stop(t + i * 0.1 + 0.5);
+            });
+        }
+
+        // ============ CORE ============
+        const WORDS = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us', 'great', 'between', 'need', 'large', 'often', 'hand', 'high', 'place', 'hold', 'turn', 'move', 'live', 'change', 'off', 'play', 'small', 'number', 'always', 'night', 'light', 'voice', 'power', 'city', 'river', 'carry', 'seem', 'write', 'study', 'still', 'learn', 'plant', 'cover', 'food', 'sun', 'four', 'felt', 'best', 'hour', 'game', 'form', 'heat', 'since', 'plan', 'figure', 'star', 'box', 'noun', 'field', 'rest', 'able', 'six', 'size', 'dark', 'ball', 'material', 'special', 'heavy', 'fine', 'pair', 'circle', 'include', 'built'];
+
+        function getWords(count) {
+            const res = [];
+            for(let i=0; i<count; i++) res.push(WORDS[Math.floor(Math.random()*WORDS.length)]);
+            return res;
+        }
+
+        function showScreen(id) {
+            [startScreen, gameScreen, resultsScreen].forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function startGame() {
+            playStart();
+            state.phase = 'game';
+            state.timeLeft = state.duration;
+            state.words = getWords(80);
+            state.currentWord = 0;
+            state.currentLetter = 0;
+            state.errors = 0;
+            state.totalKeystrokes = 0;
+            state.correctKeystrokes = 0;
+            state.wordsCompleted = 0;
+            state.combo = 0;
+            state.started = false;
+            clearInterval(state.timer);
+            renderWords();
+            updateStats();
+            updateTimerUI();
+            hideCombo();
+            showScreen('game-screen');
+            typeInput.value = '';
+            typeInput.focus();
+        }
+
+        function renderWords() {
+            wordsContainer.innerHTML = '';
+            state.words.forEach((word, wi) => {
+                const div = document.createElement('div');
+                div.className = 'word';
+                div.id = 'word-' + wi;
+                [...word].forEach((ch, li) => {
+                    const span = document.createElement('span');
+                    span.className = 'letter';
+                    span.id = `l-${wi}-${li}`;
+                    span.textContent = ch;
+                    div.appendChild(span);
+                });
+                wordsContainer.appendChild(div);
+            });
+            highlightCurrent();
+        }
+
+        function highlightCurrent() {
+            document.querySelectorAll('.letter.current').forEach(l => l.classList.remove('current'));
+            const span = document.getElementById(`l-${state.currentWord}-${state.currentLetter}`);
+            if (span) span.classList.add('current');
+            document.getElementById('word-' + state.currentWord)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        typeInput.addEventListener('input', e => {
+            if (!state.started) beginTimer();
+            const word = state.words[state.currentWord];
+            const val = typeInput.value.replace(/ /g, '');
+            if (val.length > word.length) {
+                typeInput.value = val.slice(0, word.length);
+                return;
+            }
+            state.currentLetter = val.length;
+            state.totalKeystrokes++;
+            if (val[val.length-1] === word[val.length-1]) {
+                state.correctKeystrokes++;
+                playCorrect(val.length);
+            } else {
+                state.errors++;
+                playError();
+            }
+            updateStats();
+            highlightCurrent();
+            // Re-render letters in current word
+            [...word].forEach((_, i) => {
+                const s = document.getElementById(`l-${state.currentWord}-${i}`);
+                if (!s) return;
+                s.classList.remove('correct', 'wrong');
+                if (i < val.length) s.classList.add(val[i] === word[i] ? 'correct' : 'wrong');
+            });
+        });
+
+        typeInput.addEventListener('keydown', e => {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                e.preventDefault();
+                return;
+            }
+            if (e.key === ' ') {
+                e.preventDefault();
+                const typed = typeInput.value.trim();
+                const word = state.words[state.currentWord];
+                if (typed === word) {
+                    state.wordsCompleted++;
+                    state.combo++;
+                    playWordComplete();
+                    if (state.combo >= 3) showCombo(state.combo);
+                } else {
+                    state.combo = 0;
+                    hideCombo();
+                }
+                state.currentWord++;
+                state.currentLetter = 0;
+                typeInput.value = '';
+                highlightCurrent();
+            }
+        });
+
+        function beginTimer() {
+            state.started = true;
+            state.timer = setInterval(() => {
+                state.timeLeft -= 0.01;
+                if (state.timeLeft <= 0) {
+                    state.timeLeft = 0;
+                    endGame();
+                }
+                updateTimerUI();
+            }, 10);
+        }
+
+        function updateTimerUI() {
+            timerText.textContent = Math.ceil(state.timeLeft);
+            const offset = circumference - (state.timeLeft / state.duration) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+            if (state.timeLeft <= 5) {
+                timerText.style.color = 'var(--error)';
+                progressCircle.style.stroke = 'var(--error)';
+            } else {
+                timerText.style.color = 'var(--accent)';
+                progressCircle.style.stroke = 'var(--accent)';
+            }
+        }
+
+        function updateStats() {
+            const elapsed = state.duration - state.timeLeft;
+            const wpm = elapsed > 0 ? Math.round((state.correctKeystrokes / 5) / (elapsed / 60)) : 0;
+            const acc = state.totalKeystrokes > 0 ? Math.round((state.correctKeystrokes / state.totalKeystrokes) * 100) : 0;
+            wpmVal.textContent = wpm;
+            accVal.textContent = acc + '%';
+        }
+
+        function endGame() {
+            clearInterval(state.timer);
+            state.phase = 'results';
+            playEnd();
+            const wpm = Math.round((state.correctKeystrokes / 5) / (state.duration / 60));
+            const acc = state.totalKeystrokes > 0 ? Math.round((state.correctKeystrokes / state.totalKeystrokes) * 100) : 0;
+            document.getElementById('res-wpm').textContent = wpm;
+            document.getElementById('res-acc').textContent = acc + '%';
+            document.getElementById('res-words').textContent = state.wordsCompleted;
+            document.getElementById('rank-title').textContent = getRank(wpm, acc);
+            setTimeout(() => showScreen('results-screen'), 300);
+        }
+
+        function getRank(wpm, acc) {
+            if (wpm >= 100 && acc >= 95) return 'Phantom';
+            if (wpm >= 80 && acc >= 90) return 'Specter';
+            if (wpm >= 60 && acc >= 85) return 'Drifter';
+            if (wpm >= 40 && acc >= 80) return 'Runner';
+            if (wpm >= 25) return 'Crawler';
+            return 'Ghost';
+        }
+
+        function showCombo(c) { comboCount.textContent = c; comboEl.style.opacity = '1'; }
+        function hideCombo() { comboEl.style.opacity = '0'; }
+
+        async function generateShareCard() {
+            const wpm = document.getElementById('res-wpm').textContent;
+            const acc = document.getElementById('res-acc').textContent;
+            const rank = document.getElementById('rank-title').textContent;
+            const words = document.getElementById('res-words').textContent;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = 630;
+            const ctx = canvas.getContext('2d');
+
+            // 1. Background Gradient (Mesh look)
+            const grad = ctx.createLinearGradient(0, 0, 1200, 630);
+            grad.addColorStop(0, '#0a0c14');
+            grad.addColorStop(0.5, '#16192a');
+            grad.addColorStop(1, '#0a0c14');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1200, 630);
+
+            // 2. Artistic Mesh Blurs
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = 'rgba(255, 143, 177, 0.05)';
+            ctx.beginPath(); ctx.arc(200, 200, 400, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'rgba(124, 231, 255, 0.05)';
+            ctx.beginPath(); ctx.arc(1000, 400, 400, 0, Math.PI*2); ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 3. Typo Header
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#f5a623';
+            ctx.font = '800 60px "Open Runde"';
+            ctx.fillText('TYPERIFT', 600, 120);
+            
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 20px "Open Runde"';
+            ctx.fillText('DRIFT SUMMARY', 600, 160);
+
+            // 4. Large Score Card (Glassmorphic)
+            ctx.fillStyle = 'rgba(255,255,255,0.02)';
+            ctx.roundRect(150, 200, 900, 300, 40);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.stroke();
+
+            // 5. Statistics
+            ctx.fillStyle = '#ff8fb1';
+            ctx.font = '800 120px "Open Runde"';
+            ctx.fillText(wpm, 350, 380);
+            ctx.font = '600 24px "Open Runde"';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('WPM', 350, 420);
+
+            ctx.fillStyle = '#7ce7ff';
+            ctx.font = '800 120px "Open Runde"';
+            ctx.fillText(acc, 600, 380);
+            ctx.font = '600 24px "Open Runde"';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('ACCURACY', 600, 420);
+
+            ctx.fillStyle = '#a0f4d0';
+            ctx.font = '800 120px "Open Runde"';
+            ctx.fillText(words, 850, 380);
+            ctx.font = '600 24px "Open Runde"';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('WORDS', 850, 420);
+
+            // 6. Rank Text
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '500 24px "Open Runde"';
+            ctx.fillText('Rank: ' + rank, 600, 560);
+
+            // Download
+            const link = document.createElement('a');
+            link.download = `Typerift_DriftCard_${wpm}WPM.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function share(platform) {
+            const wpm = document.getElementById('res-wpm').textContent;
+            const url = window.location.href;
+            const text = `I just drifted at ${wpm} WPM on TYPERIFT! 🔥 Can you beat me?`;
+            let shareUrl = '';
+            if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+            if (platform === 'x') shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            if (platform === 'whatsapp') shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`;
+            if (platform === 'telegram') shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+            if (shareUrl) window.open(shareUrl, '_blank');
+        }
+
+        // ============ BUBBLES ============
+        const bubbles = [];
+        const bubbleContainer = document.getElementById('bubble-container');
+        function initBubbles() {
+            for (let i = 0; i < 15; i++) {
+                const b = {
+                    el: document.createElement('div'),
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: (Math.random() - 0.5) * 1.5,
+                    size: 40 + Math.random() * 100
+                };
+                b.el.className = 'bubble';
+                b.el.style.width = b.size + 'px';
+                b.el.style.height = b.size + 'px';
+                bubbleContainer.appendChild(b.el);
+                bubbles.push(b);
+            }
+        }
+
+        function updateBubbles() {
+            if (state.phase !== 'start') { bubbleContainer.style.opacity = '0'; }
+            else { bubbleContainer.style.opacity = '1'; }
+            bubbles.forEach(b => {
+                b.x += b.vx; b.y += b.vy;
+                if (b.x < -b.size) b.x = window.innerWidth;
+                if (b.x > window.innerWidth) b.x = -b.size;
+                if (b.y < -b.size) b.y = window.innerHeight;
+                if (b.y > window.innerHeight) b.y = -b.size;
+                const dx = state.mx - b.x - b.size/2;
+                const dy = state.my - b.y - b.size/2;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                let tx = 0, ty = 0;
+                if (dist < 150) {
+                    const angle = Math.atan2(dy, dx);
+                    const force = (150 - dist) / 150;
+                    tx = -Math.cos(angle) * force * 150;
+                    ty = -Math.sin(angle) * force * 150;
+                }
+                b.el.style.transform = `translate(${b.x + tx}px, ${b.y + ty}px)`;
+            });
+            requestAnimationFrame(updateBubbles);
+        }
+
+        // ============ INIT ============
+        initBubbles();
+        updateBubbles();
+        document.addEventListener('mousemove', e => {
+            state.mx = e.clientX; state.my = e.clientY;
+            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+            setTimeout(() => { cursorRing.style.left = e.clientX + 'px'; cursorRing.style.top = e.clientY + 'px'; }, 50);
+        });
+        document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%, -50%) scale(0.7)'; cursorRing.style.width = '24px'; cursorRing.style.height = '24px'; });
+        document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%, -50%) scale(1)'; cursorRing.style.width = '32px'; cursorRing.style.height = '32px'; });
+        document.querySelectorAll('.mode-btn[data-time]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn[data-time]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.duration = parseInt(btn.dataset.time);
+                state.timeLeft = state.duration;
+                timerText.textContent = state.duration;
+            });
+        });
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('retry-btn').addEventListener('click', startGame);
+        document.getElementById('menu-btn').addEventListener('click', () => { state.phase = 'start'; showScreen('start-screen'); });
+        showScreen('start-screen');
+    </script>
+</body>
+</html>
