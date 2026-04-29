@@ -643,6 +643,7 @@
             updateTimerUI();
             hideCombo();
             showScreen('game-screen');
+            beginTimer();
             typeInput.value = '';
             typeInput.focus();
         }
@@ -673,7 +674,6 @@
         }
 
         typeInput.addEventListener('input', e => {
-            if (!state.started) beginTimer();
             const word = state.words[state.currentWord];
             const val = typeInput.value.replace(/ /g, '');
             if (val.length > word.length) {
