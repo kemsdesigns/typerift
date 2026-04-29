@@ -1,4 +1,5 @@
 {
-  "framework": null,
-  "buildCommand": null
+  "buildCommand": "mkdir -p public && cp -r * public/ || true",
+  "outputDirectory": "public",
+  "framework": null
 }
