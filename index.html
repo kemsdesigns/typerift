@@ -387,6 +387,43 @@
             display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            #start-screen h1 { font-size: 3.5rem; }
+            .subtitle { font-size: 1rem; margin-bottom: 2rem; }
+            
+            #word-stage { padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem; }
+            #words-container { font-size: 1.2rem; height: 90px; gap: 0.5rem 0.8rem; }
+            #type-input { padding: 1rem; font-size: 1rem; }
+            
+            .stats-row { gap: 1.5rem; margin-bottom: 1.5rem; }
+            .stat-value { font-size: 1.8rem; }
+            .stat-label { font-size: 0.6rem; }
+            #timer-container { width: 80px; height: 80px; }
+            #timer-text { font-size: 1.4rem; }
+            svg.progress-ring { transform: rotate(-90deg) scale(0.8); transform-origin: center; }
+            
+            #results-card { padding: 2rem 1.5rem; border-radius: 1.5rem; }
+            #results-card h2 { font-size: 2rem; }
+            .res-grid { gap: 1rem; margin: 2rem 0; }
+            .res-val { font-size: 2.2rem; }
+            .res-lbl { font-size: 0.7rem; }
+            .share-card-btn { padding: 0.8rem 1rem; font-size: 0.9rem; }
+            
+            .btn { padding: 0.8rem 2rem; font-size: 1rem; }
+            .mode-btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
+            
+            #combo { top: -30px; font-size: 1rem; }
+        }
+        
+        @media (max-width: 480px) {
+            #start-screen h1 { font-size: 2.8rem; }
+            .res-grid { grid-template-columns: 1fr; gap: 1.5rem; }
         }
     </style>
     <script type="module">
